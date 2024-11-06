@@ -10,8 +10,9 @@ This script generates heatmaps from RNA sequencing (RNAseq) data, applying sever
 3. Heatmap Generation and Saving as PDF and PNG files with different dimensions to accommodate various presentation needs.
 4. Troubleshooting: Commands are included to detect and locate any NA (missing) values, addressing common data issues that may prevent heatmap generation.
 
-Based on the following script online: 
+Based on the following scripts online: 
 https://davetang.github.io/muse/pheatmap.html
+https://bioinformatics.ccr.cancer.gov/docs/data-visualization-with-r/Lesson5_intro_to_ggplot/
 
 Load necessary libraries
 ```{r}
