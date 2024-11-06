@@ -12,7 +12,7 @@ date: "2023-11-05"
 #4. Visualizes the PCA results in several ways: basic scatter plot, scatter plot with ellipses, and scatter plot with sample labels.
 #5.Exports the final PCA plot as both PNG and PDF files for sharing or publication.
 
-#adapted on the following tutorial: https://bioinformatics.ccr.cancer.gov/docs/data-visualization-with-r/Lesson3_plotcustomization/
+#Based on the following tutorial: https://bioinformatics.ccr.cancer.gov/docs/data-visualization-with-r/Lesson3_plotcustomization/
 
 # Load necessary libraries for plotting and data manipulation
 ```{r}
