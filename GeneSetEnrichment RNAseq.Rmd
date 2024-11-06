@@ -1,0 +1,128 @@
+---
+title: "Gene set enrichment"
+output: pdf_document
+date: "2023-11-05"
+---
+
+This script is for conducting gene set enrichment analysis (GSEA) on RNA-seq data. It identifies biological processes and pathways enriched among differentially expressed genes in a dataset. Key steps include installing necessary libraries, loading gene expression data, preparing gene lists, and running enrichment analyses using the Gene Ontology (GO). Visualization options, such as dot plots, help to interpret which gene sets are most relevant to the biological questions in the study.
+
+Based on the following script: 
+https://learn.gencore.bio.nyu.edu/rna-seq-analysis/gene-set-enrichment-analysis/
+
+Install packages
+```{r}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("clusterProfiler")
+```
+
+#install DOSE
+```{r}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("DOSE")
+```
+
+#If installed all start here
+----------------
+Load Libraries
+```{r}
+library(clusterProfiler)
+library(ggplot2)
+```
+
+Load Organism Annotation Data
+```{r}
+organism = "org.Hs.eg.db"
+library(organism, character.only = TRUE)
+```
+
+Read Differential Expression Data
+```{r}
+df<-read.csv("/Users/jeffreyreina/Documents/Salk/RNAseq MDA-MB-231 results/03.Result_X202SC23073852-Z01-F001_Homo_sapiens/Result_X202SC23073852-Z01-F001_Homo_sapiens/4.Differential/1.deglist/KOvsWT/KOvsWT_deg_all.csv",header=TRUE,row.names=1)
+```
+
+Prepare Gene List for Enrichment Analysis
+```{r}
+df$ENSEMBL<-rownames(df) ## Create a new column for ENSEMBL gene IDs
+```
+
+Organize data frame
+```{r}
+# Extract log2 fold change values
+original_gene_list <- df$log2FoldChange
+names(original_gene_list) <- df$ENSEMBL
+
+# Remove any NA values and sort by decreasing order
+gene_list<-na.omit(original_gene_list)
+gene_list = sort(gene_list, decreasing = TRUE)
+```
+
+Check Available Key Types
+```{r}
+keytypes(org.Hs.eg.db)
+```
+Run Gene Set Enrichment Analysis (GSEA) Biological Process
+```{r}
+gse <- gseGO(geneList=gene_list, 
+             ont ="BP", # Biological Process ontology
+             keyType = "ENSEMBL", 
+             nPerm = 10000, 
+             minGSSize = 10, 
+             maxGSSize = 800, 
+             pvalueCutoff = 1, 
+             verbose = TRUE, 
+             OrgDb = organism, 
+             pAdjustMethod = "none")
+```
+
+
+Plotting Enrichment Results
+```{r}
+require(DOSE)
+
+dotplot(gse,
+  x = "GeneRatio",
+  color = "pvalue",
+  showCategory = 30,##how many categories to show
+  size = NULL,
+  split = NULL,
+  font.size = 12,
+  title = "",
+  orderBy = "x",
+  label_format = 60,
+  decreasing = TRUE
+)
+```
+
+Save Plot to PDF
+```{r}
+pdf("EnrichmentRNAseqKOvsWT.pdf", width=10, height=8)
+
+require(DOSE)
+dotplot(gse,
+  x = "GeneRatio",
+  color = "pvalue",
+  showCategory = 30,##how many categories to show
+  size = NULL,
+  split = NULL,
+  font.size = 12,
+  title = "",
+  label_format = 70,
+)
+```
+
+Save Results to CSV
+```{r}
+resultsgseGO<-data.frame(gse@result)
+write.csv(resultsgseGO, "resultsgeGOfinal.csv")
+```
+
+Alternative Plot: Split by Direction
+```{r}
+require(DOSE)
+dotplot(gse, showCategory=10, split=".sign") + facet_grid(.~.sign)
+```
+
+

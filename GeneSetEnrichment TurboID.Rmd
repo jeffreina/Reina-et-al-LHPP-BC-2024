@@ -1,0 +1,125 @@
+---
+title: "Gene set enrichment Proximity-labeling Proteomics"
+output: pdf_document
+date: "2023-11-05"
+---
+
+This script is for conducting gene set enrichment analysis (GSEA) on proximity-labeling proteomics datasets. It identifies biological processes and pathways enriched among differentially expressed genes in a dataset. Key steps include installing necessary libraries, loading gene expression data, preparing gene lists, and running enrichment analyses using the Gene Ontology (GO). Visualization options, such as dot plots, help to interpret which gene sets are most relevant to the biological questions in the study.
+
+Based on the following script: 
+https://learn.gencore.bio.nyu.edu/rna-seq-analysis/gene-set-enrichment-analysis/
+
+
+Install packages
+```{r}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("clusterProfiler")
+```
+
+#install DOSE
+```{r}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("DOSE")
+```
+
+#If installed all start here
+----------------
+Load libraries
+```{r}
+library(clusterProfiler)
+library(ggplot2)
+```
+
+Load Organism Annotation Data
+```{r}
+organism = "org.Hs.eg.db"
+library(organism, character.only = TRUE)
+```
+
+Read proximity-proteomics dataset
+```{r}
+df<-read.csv("/Users/jeffreyreina/Documents/Salk/TurboID analysis/MDATurboUniprot.csv",header=TRUE,row.names=1)
+```
+
+Prepare Gene List for Enrichment Analysis
+```{r}
+df$Uniprot<-rownames(df) ## Create a new column for Uniprot IDs
+```
+
+Organize data frame
+```{r}
+# Extract log2 fold change values
+original_gene_list <- df$log2FC
+names(original_gene_list) <- df$Uniprot
+
+# Remove any NA values and sort by decreasing order
+gene_list<-na.omit(original_gene_list)
+gene_list = sort(gene_list, decreasing = TRUE)
+```
+
+Check Available Key Types
+```{r}
+keytypes(org.Hs.eg.db) ##we will use UNIPROT
+```
+Run Gene Set Enrichment Analysis (GSEA) Biological Process
+```{r}
+gse <- gseGO(geneList=gene_list, 
+             ont ="BP", 
+             keyType = "UNIPROT", 
+             nPerm = 10000, 
+             minGSSize = 10, 
+             maxGSSize = 800, 
+             pvalueCutoff = 1, 
+             verbose = TRUE, 
+             OrgDb = organism, 
+             pAdjustMethod = "none")
+```
+
+Plotting Enrichment Results
+```{r}
+require(DOSE)
+
+dotplot(gse,
+  x = "GeneRatio",
+  color = "pvalue",
+  showCategory = 30,
+  size = NULL,
+  split = NULL,
+  font.size = 12,
+  title = "",
+  orderBy = "x",
+  label_format = 45,
+  decreasing = TRUE
+)
+```
+
+Save Plot to PDF
+```{r}
+pdf("EnrichmentTurboID.pdf", width=10, height=8)
+
+require(DOSE)
+dotplot(gse,
+  x = "GeneRatio",
+  color = "p.adjust",
+  showCategory = 30,
+  size = NULL,
+  split = NULL,
+  font.size = 12,
+  title = "",
+  label_format = 70,
+)
+```
+
+Save Results to CSV
+```{r}
+resultsgseGO<-data.frame(gse@result)
+write.csv(resultsgseGO, "resultsgeGOfinalTurbo.csv")
+```
+
+
+
+
+

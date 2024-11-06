@@ -1,0 +1,91 @@
+---
+title: "Volcano Plot for Proximity Labeling Proteomics"
+output: pdf_document
+date: "2023-11-05"
+---
+
+This R script generates a volcano plot to visualize differentially regulated proteins on a proximity-labeling proteomics (e.g TurboID) dataset, highlighting proteins based on significance (p-value) and regulation (up- or down-regulated).
+
+Based on the following script: 
+https://github.com/kevinblighe/EnhancedVolcano
+
+Install necessary packages if not already installed
+
+Install packages
+```{r}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("EnhancedVolcano")
+```
+
+Load data from a CSV file
+```{r}
+mat<-read.csv("/Users/jeffreyreina/Documents/Salk/TurboID analysis/MDATurboUniprot.csv",header=TRUE,row.names=1)
+```
+
+Ensure the log2 fold change column is numeric
+```{r}
+mat$log2fc<-as.numeric(mat$log2FC)
+```
+
+Load EnhancedVolcano package for plotting
+```{r}
+library(EnhancedVolcano)
+```
+
+Generate a basic volcano plot
+```{r}
+EnhancedVolcano(mat,
+                lab = rownames(mat),
+                x = "log2fc",
+                y = "Pval") 
+```
+
+Check the first few rows of the matrix
+```{r}
+head(mat)  
+```
+
+Add a significance column based on p-value threshold
+```{r}
+mat$significant<-ifelse (mat$Pval <= 0.05, "true", "false")
+```
+
+Calculate -log10 of the p-value for plotting
+```{r}
+mat$log10pval<--log10(mat$Pval)
+```
+
+Identify upregulated and downregulated genes
+```{r}
+mat$updown<-ifelse (mat$FC <= 1, "down", "up")
+```
+
+
+Create a volcano plot with significant proteins labeled and colored
+
+```{r}
+
+ggplot(data=mat, aes(x = log2FC, y = log10pval)) + 
+  geom_point(data = subset(mat, significant %in% c("true")), size = 2,  
+              alpha = 0.5,  aes(color = updown), shape=19) +
+  scale_color_manual(values = c("#2c538f", "firebrick")) + geom_point(data = subset(mat, significant %in% c("false")), size = 2,  
+                alpha = 0.5,  colour = "#3a3d3a") +
+  theme_bw() + 
+  geom_text_repel(data = subset(mat, significant %in% c("true")), aes(label = Gene_Name))
+```
+
+
+Save the plot as a PDF
+```{r}
+pdf("volcanoTurboID.pdf", width=6, height=4.5)
+
+ggplot(data=mat, aes(x = log2FC, y = log10pval)) + 
+  geom_point(data = subset(mat, significant %in% c("true")), size = 2,  
+              alpha = 0.5,  aes(color = updown), shape=19) +
+  scale_color_manual(values = c("#2c538f", "firebrick")) + geom_point(data = subset(mat, significant %in% c("false")), size = 2,  
+                alpha = 0.5,  colour = "#3a3d3a") +
+  theme_bw() + 
+  geom_text_repel(data = subset(mat, significant %in% c("true")), aes(label = Gene_Name))
+```

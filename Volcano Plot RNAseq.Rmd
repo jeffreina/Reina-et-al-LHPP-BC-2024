@@ -1,0 +1,90 @@
+---
+title: "Volcano Plot"
+output: pdf_document
+date: "2023-11-05"
+---
+
+This R script generates a volcano plot to visualize differentially expressed genes (DEGs) from RNA sequencing data, highlighting genes based on significance (p-value) and regulation (up- or down-regulated).
+
+Based on the following script: 
+https://github.com/kevinblighe/EnhancedVolcano
+
+Install necessary packages if not already installed
+```{r}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("EnhancedVolcano")
+```
+
+Load the data from a CSV file
+```{r}
+mat<-read.csv("/Users/jeffreyreina/Documents/Salk/RNAseq MDA-MB-231 results/03.Result_X202SC23073852-Z01-F001_Homo_sapiens/Result_X202SC23073852-Z01-F001_Homo_sapiens/4.Differential/1.deglist/KOvsWT/KOvsWT_deg.csv",header=TRUE,row.names=1)
+```
+
+Convert the log2fc column to numeric format to ensure correct plotting
+```{r}
+mat$log2fc<-as.numeric(mat$log2FoldChange)
+```
+
+Load the EnhancedVolcano library for creating volcano plots
+```{r}
+library(EnhancedVolcano)
+```
+
+Create a basic volcano plot with default settings
+```{r}
+EnhancedVolcano(mat,
+                lab = rownames(mat),
+                x = "log2FoldChange",
+                y = "pvalue") 
+```
+
+Preview the first few rows of mat to check the data
+```{r}
+head(mat)  
+```
+
+Add a significant column to flag genes with p-value less or equal to 0.05
+```{r}
+mat$significant<-ifelse (mat$pvalue <= 0.05, "true", "false")
+```
+
+Calculate -log10(p-value) for better visualization on the y-axis
+```{r}
+mat$log10pval<--log10(mat$pvalue)
+```
+
+Label genes as up or down regulated based on log2FoldChange
+```{r}
+mat$updown<-ifelse (mat$log2FoldChange <= 0, "down", "up")
+```
+
+
+Customize volcano plot with colors for significant and non-significant points
+```{r}
+log10pval<--log(mat$pvalue, 10)
+
+ggplot(data=mat, aes(x = log2FoldChange, y = log10pval)) + 
+  geom_point(data = subset(mat, significant %in% c("true")), size = 2,  
+              alpha = 0.5,  aes(color = updown), shape=19) +
+  scale_color_manual(values = c("#2c538f", "firebrick")) + geom_point(data = subset(mat, significant %in% c("false")), size = 2,  
+                alpha = 0.5,  colour = "#3a3d3a") +
+  theme_bw() + 
+  geom_text_repel(data = subset(mat, significant %in% c("true")), aes(label = gene_name))
+```
+
+Save the customized plot as a PDF
+```{r}
+pdf("volcanoKOvsWT.pdf", width=6, height=4.5)
+
+ggplot(data=mat, aes(x = log2FoldChange, y = log10pval)) + 
+  geom_point(data = subset(mat, significant %in% c("true")), size = 2,  
+              alpha = 0.5,  aes(color = updown), shape=19) +
+  scale_color_manual(values = c("#2c538f", "firebrick")) + geom_point(data = subset(mat, significant %in% c("false")), size = 2,  
+                alpha = 0.5,  colour = "#3a3d3a") +
+  theme_bw() + 
+  geom_text_repel(data = subset(mat, significant %in% c("true")), aes(label = gene_name))
+```
+
+

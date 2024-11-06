@@ -1,0 +1,88 @@
+---
+title: "Heatmap RNAseq"
+output: pdf_document
+date: "2023-11-04"
+---
+This script generates heatmaps from RNA sequencing (RNAseq) data, applying several data transformations and customizations. Here’s an overview of the main steps:
+
+1. Load Libraries
+2. Data Import and Preparation: RNAseq data is read from a CSV file, and transformations are applied: Log2 and Z-score Transformation. 
+3. Heatmap Generation and Saving as PDF and PNG files with different dimensions to accommodate various presentation needs.
+4. Troubleshooting: Commands are included to detect and locate any NA (missing) values, addressing common data issues that may prevent heatmap generation.
+
+Based on the following script online: 
+https://davetang.github.io/muse/pheatmap.html
+
+Load necessary libraries
+```{r}
+library(pheatmap) 
+library(tidyverse) 
+library(ggplotify) 
+library(heatmaply) 
+```
+
+Read the data table
+```{r}
+mat<-read.csv("/Users/jeffreyreina/Documents/Salk/RNAseq MDA-MB-231 results/03.Result_X202SC23073852-Z01-F001_Homo_sapiens/Analysis without Rescues/heatmap_replicates.csv",header=TRUE,row.names=1)
+```
+
+Transform data to log2 scale
+```{r}
+mattransformed<-log2(mat+1) #+1 to avoid errors with 0 values
+```
+
+Transform data to z-scores
+```{r}
+cal_z_score <- function(x){
+  (x - mean(x)) / sd(x)
+}
+
+matzscore <- t(apply(mattransformed, 1, cal_z_score))
+```
+
+Define sample groups for annotation
+```{r}
+dfh<-data.frame(sample=as.character(colnames(mat)),group="Treatment")%>%
+                column_to_rownames("sample")
+dfh$group<-ifelse(rownames(dfh) %in% c("KO1","KO2","KO3"),
+                "KO","WT")
+dfh
+```
+
+
+Choose color palette for heatmap
+```{r}
+my_palette <- colorRampPalette(c("green", "black", "red"))(n = 9999)
+```
+
+Save heatmap as a PDF
+```{r}
+pdf("Heatmap2.pdf",width=4.4,height=6.3)
+
+pheatmap(matzscore, color = my_palette, scale = "row", show_rownames = FALSE, annotation_col = dfh, annotation_colors=list(group=c(KO="blue",WT="orange")), treeheight_row = 10)
+dev.off()
+```
+
+Save heatmap as a PNG
+```{r}
+png("pheatmap_5.png", res=300, width=7, height=4.5, unit="in")
+
+pheatmap(matzscore, color = my_palette, scale = "row", show_rownames = FALSE, annotation_col = dfh, annotation_colors=list(group=c(KO="blue",WT="red")), treeheight_row = 10)
+dev.off()
+```
+
+Save heatmap with exchanged width and height in PNG
+```{r}
+png("pheatmap_2.png", res=300, width=4.5, height=7, unit="in")
+
+pheatmap(matzscore, color = my_palette, scale = "row", show_rownames = FALSE, annotation_col = dfh, annotation_colors=list(group=c(KO="blue",WT="red")),  treeheight_row = 10)
+dev.off()
+```
+
+Save heatmap as an R object
+```{r}
+hm_ph <-pheatmap(matzscore, color = my_palette, scale = "row", show_rownames = FALSE, annotation_col = dfh, annotation_colors=list(group=c(KO="blue",WT="orange")),  treeheight_row = 10)
+```
+
+```
+

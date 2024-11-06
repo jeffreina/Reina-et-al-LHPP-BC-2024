@@ -1,0 +1,128 @@
+---
+title: "Prinipal component analysis"
+output: pdf_document
+date: "2023-11-05"
+---
+
+#This script performs the following steps:
+
+#1.Loads the required libraries.
+#2.Reads RNA-seq data and transposes it.
+#3. Conducts PCA on the transposed data.
+#4. Visualizes the PCA results in several ways: basic scatter plot, scatter plot with ellipses, and scatter plot with sample labels.
+#5.Exports the final PCA plot as both PNG and PDF files for sharing or publication.
+
+#adapted on the following tutorial: https://bioinformatics.ccr.cancer.gov/docs/data-visualization-with-r/Lesson3_plotcustomization/
+
+# Load necessary libraries for plotting and data manipulation
+```{r}
+library(ggrepel)
+library(ggplot2)
+library(dplyr) 
+```
+
+# Read the data file from an RNA-seq analysis into a matrix
+```{r}
+mat<-read.csv("/Users/jeffreyreina/Documents/Salk/RNAseq MDA-MB-231 results/03.Result_X202SC23073852-Z01-F001_Homo_sapiens/Analysis without Rescues/heatmap_replicates.csv",header=TRUE,row.names=1) #replace with your file path
+```
+
+# Transpose the matrix to make samples the rows and genes the columns
+```{r}
+tranmat <- t(mat)
+```
+
+# Perform Principal Component Analysis (PCA) on the transposed matrix
+```{r}
+pca <- prcomp(tranmat, scale = TRUE)
+```
+
+
+# Optional: View the structure of the PCA object to understand its components
+```{r}
+str(pca)
+```
+
+# Convert the first two principal components (PC1 and PC2) into a data frame for plotting
+```{r}
+pcaData <- as.data.frame(pca$x[, 1:2]) 
+```
+
+# Add a genotype column to the data frame to label samples by genotype (KO or WT)
+```{r}
+pcaData$genotype <- c("KO", "KO", "KO", "WT", "WT", "WT")
+```
+
+# Basic scatter plot of PC1 vs PC2, with points colored and shaped by genotype
+```{r}
+ggplot(pcaData) + aes(PC1, PC2, color=genotype, shape=genotype) + geom_point(size = 5)
+```
+```{r}
+# Extract the variance explained by each principal component
+# Useful for understanding the importance of each PC in representing the data
+summary(pca)
+```
+
+# Improved scatter plot of PC1 vs PC2 with fixed aspect ratio and labeled axes
+```{r}
+ggplot(pcaData) + aes(PC1, PC2, color = genotype, shape = genotype) + 
+  geom_point(size = 5) + 
+  coord_fixed() +
+  xlab("PC1: 51.46%")+ # Label for the x-axis, showing variance explained
+  ylab("PC2: 76.34%")  # Label for the y-axis, showing variance explained
+
+```
+
+# Remove minor grid lines from the plot for a cleaner look
+```{r}
+ggplot(pcaData) + aes(PC1, PC2, color = genotype, shape = genotype) + 
+  geom_point(size = 5) + 
+  coord_fixed() +
+  xlab("PC1: 51.46%")+ 
+  ylab("PC2: 76.34%")+ 
+  theme_bw() +
+  theme(panel.grid.minor = element_blank())
+
+```
+
+# Add sample labels to points with ggplot2, using ggrepel to avoid label overlap
+```{r}
+ggplot(pcaData, aes(PC1, PC2, color = genotype, shape = genotype)) + 
+  geom_point(size = 5) +
+  coord_fixed() +
+  xlab("PC1: 51.46%")+ 
+  ylab("PC2: 76.34%")+ 
+  theme_bw() +
+  theme(panel.grid.minor = element_blank()) +
+  geom_text_repel(aes(label=rownames(pcaData)), col="black") 
+```
+
+# Save the plot as a PNG file
+```{r}
+png("PCAWTKO.png", res=300, width=7, height=4.5, unit="in")
+
+ggplot(pcaData, aes(PC1, PC2, color = genotype, shape = genotype)) + 
+  geom_point(size = 5) +
+  coord_fixed() +
+  xlab("PC1: 51.46%")+ #x axis label text
+  ylab("PC2: 76.34%")+ # y axis label text
+  theme_bw() +
+  theme(panel.grid.minor = element_blank()) +
+  geom_text_repel(aes(label=rownames(pcaData)), col="black") 
+```
+
+# Save the plot as a PDF file
+```{r}
+pdf("PCAWTKO.pdf", width=7, height=4.5)
+
+ggplot(pcaData, aes(PC1, PC2, color = genotype, shape = genotype)) + 
+  geom_point(size = 5) +
+  coord_fixed() +
+  xlab("PC1: 51.46%")+ #x axis label text
+  ylab("PC2: 76.34%")+ # y axis label text
+  theme_bw() +
+  theme(panel.grid.minor = element_blank()) +
+  geom_text_repel(aes(label=rownames(pcaData)), col="black") 
+dev.off
+```
+```
+
